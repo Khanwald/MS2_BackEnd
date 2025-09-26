@@ -10,6 +10,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.DB_USER}:{conf
 
 db = SQLAlchemy(app)
 
+def getQuery(query, cond=None):
+    if cond == None:
+        cond={}
+        
+    result = db.session.execute(text(query), cond)
+    output = []
+    for row in result:
+        output.append(dict(row._mapping)) 
+    return output
 
 @app.route('/api/films')
 def films():
@@ -25,22 +34,15 @@ def films():
     
     return jsonify({"films": output})
 
-@app.route('/api/members')
+@app.route('/api/members', methods=['GET'])
 def member():
     page = request.args.get('page', 1, type=int)
     items = 10
     index = (page - 1) * items
     end = page * items
     
-    result = db.session.execute(text("select customer_id, store_id, first_name, last_name from customer"))
-    output = []
-    for row in result:
-        output.append({
-            "customer_id": row.customer_id,
-            "store_id": row.store_id,
-            "first_name": row.first_name,
-            "last_name": row.last_name
-        })
+    result = "select customer_id, store_id, first_name, last_name from customer"
+    output = getQuery(result)
     pages = output[index:end]
     totalPages= math.ceil(len(output)/items)
     
@@ -51,7 +53,15 @@ def member():
         "customers": pages,
         "totalPages": totalPages
     })
-    
+
+@app.route('/api/memberProfile/<int:customer_id>', methods=['GET'])
+def profile(customer_id):
+    result = "select c.customer_id, c.first_name, c.last_name, r.rental_id, r.rental_date, r.return_date from customer c join rental r on r.customer_id = c.customer_id where c.customer_id = :id"
+    cond = {"id" : customer_id}
+    output = getQuery(result, cond)
+    return jsonify({"rental": output})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
     
