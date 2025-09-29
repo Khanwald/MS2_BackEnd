@@ -20,19 +20,17 @@ def getQuery(query, cond=None):
         output.append(dict(row._mapping)) 
     return output
 
-@app.route('/api/films')
+@app.route('/api/topFilms')
 def films():
-    result = db.session.execute(text("select f.film_id, f.title, fc.category_id, c.name from film f join film_category fc on f.film_id = fc.film_id  join category c on fc.category_id = c.category_id"))
-    output = []
-    for row in result:
-        output.append({
-            "film_id": row.film_id,
-            "title": row.title,
-            "category_id": row.category_id,
-            "category_name": row.name
-        })
-    
-    return jsonify({"films": output})
+    result = "SELECT f.film_id,f.title, COUNT(DISTINCT r.rental_id) AS rental_count FROM film f JOIN film_actor fa ON f.film_id = fa.film_id JOIN actor a ON fa.actor_id = a.actor_id JOIN inventory i ON f.film_id = i.film_id JOIN rental r ON i.inventory_id = r.inventory_id GROUP BY f.film_id, f.title ORDER BY rental_count desc limit 5"
+    ouput = getQuery(result)
+    return jsonify({"films": ouput})
+
+@app.route('/api/getTopActors')
+def topActors():
+    result = "SELECT a.actor_id, a.first_name, a.last_name, COUNT(DISTINCT i.film_id) AS film_count FROM actor a JOIN film_actor fa ON a.actor_id = fa.actor_id JOIN film f ON fa.film_id = f.film_id JOIN inventory i ON f.film_id = i.film_id GROUP BY a.actor_id, a.first_name, a.last_name ORDER BY film_count DESC LIMIT 5"
+    output = getQuery(result)
+    return jsonify({"actors": output})
 
 @app.route('/api/members', methods=['GET'])
 def member():
@@ -70,10 +68,13 @@ def member():
 
 @app.route('/api/memberProfile/<int:customer_id>', methods=['GET'])
 def profile(customer_id):
-    result = "select c.customer_id, c.first_name, c.last_name, r.rental_id, r.rental_date, r.return_date from customer c join rental r on r.customer_id = c.customer_id where c.customer_id = :id"
+    customerDetails= "select * from customer where customer_id = :id"
+    result = "select r.rental_id, r.rental_date, r.return_date, f.title from customer c join rental r on r.customer_id = c.customer_id join inventory i on i.inventory_id = r.inventory_id join film f on i.film_id = f.film_id where c.customer_id = :id"
     cond = {"id" : customer_id}
     output = getQuery(result, cond)
-    return jsonify({"rental": output})
+    output2= getQuery(customerDetails, cond)
+    return jsonify({"rental": output,
+                    "details": output2})
 
 @app.route('/api/getMovie', methods=['GET'])
 def getMovie():
@@ -97,4 +98,5 @@ def getMovie():
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
+
+
