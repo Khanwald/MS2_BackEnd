@@ -85,7 +85,7 @@ def getMovie():
         result = "select * from film where title LIKE :film_name"
         cond = {"film_name" : f"{title}%"}
     elif type == "Actor":
-        result = "select distinct f.film_id, f.title, CONCAT(a.first_name, ' ',a.last_name) as name from film_actor fa join actor a on fa.actor_id = a.actor_id join film f on f.film_id = fa.film_id where CONCAT(a.first_name, ' ', a.last_name) LIKE :actor_name order by f.film_id"
+        result = "select distinct f.film_id, f.title, CONCAT(a.first_name, ' ',a.last_name) as name from film_actor fa join actor a on fa.actor_id = a.actor_id join film f on f.film_id = fa.film_id where CONCAT(a.first_name, ' ', a.last_name) LIKE :actor_name or a.first_name like :actor_name or a.last_name like :actor_name order by f.film_id"
         cond = {"actor_name" : f"{title}%"}
     elif type == "Genre":
         result="select f.film_id, f.title, fc.category_id, c.name from film f join film_category fc on f.film_id = fc.film_id join category c on fc.category_id = c.category_id where c.name like :genre"
