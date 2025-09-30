@@ -96,6 +96,17 @@ def getMovie():
     output = getQuery(result, cond)
     return jsonify({"movies": output})
 
+@app.route('/api/getMovieDetails/<int:film_id>')
+def getMovieDetails(film_id):
+    querya="select f.film_id, f.title, f.description, f.release_year, f.rating, f.special_features, fc.category_id, c.name from film f join film_category fc on f.film_id = fc.film_id join category c on fc.category_id = c.category_id where f.film_id = :id"
+    queryb="select a.first_name, a.last_name, f.title from actor a join film_actor fa on a.actor_id = fa.actor_id join film f on f.film_id = fa.film_id where fa.film_id = :id"
+    cond = {"id" : film_id}
+    
+    movieDetails=getQuery(querya,cond)
+    actorsInMovie=getQuery(queryb,cond)
+    
+    return jsonify({"details":movieDetails, "actors":actorsInMovie})
+    
 if __name__ == "__main__":
     app.run(debug=True)
 
